@@ -1,0 +1,10 @@
+# Bộ công cụ đánh giá cổ phiếu (tools/)
+pandas>=2.0
+numpy>=1.24
+httpx>=0.27
+vnstock>=4.0
+
+# --- Dành cho main.py (bot Telegram cảnh báo giá) ---
+# pyTelegramBotAPI>=4.14
+# APScheduler>=3.10
+# python-dotenv>=1.0
