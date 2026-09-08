@@ -1,0 +1,36 @@
+services:
+  stock-mcp:
+    build:
+      context: ..
+      dockerfile: mcp_server/Dockerfile
+    image: stock-market-knowledge-mcp:0.1.0
+    container_name: stock-mcp
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    # Bind localhost vì nginx reverse proxy xử lý TLS ở ngoài.
+    # Nếu muốn expose trực tiếp (không khuyến nghị), đổi thành "8001:8001".
+    ports:
+      - "127.0.0.1:8001:8001"
+
+    # Volume cho market_reports để push report mới mà không cần rebuild image.
+    # File markdown knowledge (bài 01–06) nằm trong image (đã copy lúc build);
+    # để update knowledge → rebuild image: `docker compose build && up -d`.
+    volumes:
+      - ./market_reports:/app/market_reports:ro
+
+    # Giới hạn tài nguyên (tùy chỉnh theo VPS).
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+    # Log rotation
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

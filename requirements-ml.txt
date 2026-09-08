@@ -1,0 +1,13 @@
+# Deps ML cho `tools/timesfm/`. Tách riêng để Docker cache layer,
+# pin CPU-only torch (~200MB thay vì ~800MB CUDA wheel).
+#
+# Cài bằng:
+#   pip install -r requirements-ml.txt
+#
+# Sau đó copy thư mục `timesfm3/` từ Google upstream
+# (google-research/timesfm) vào stock-market-knowledge/timesfm3/.
+# Tool `timesfm_forecast` sẽ trả error JSON cho đến khi hoàn tất 2 bước trên.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0
+timesfm

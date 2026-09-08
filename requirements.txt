@@ -3,6 +3,17 @@ pandas>=2.0
 numpy>=1.24
 httpx>=0.27
 vnstock>=4.0
+yfinance>=0.2.40           # cần cho tools/timesfm (download OHLCV)
+
+# MCP server (mcp_server/) — expose knowledge base + tools qua MCP protocol.
+# Cần thiết khi chạy `python -m mcp_server` hoặc build Docker image.
+mcp>=1.0
+
+# ML deps cho TimesFM 3.0 forecast — tách riêng ở `requirements-ml.txt`
+# để Docker image gọn hơn. Cài riêng:
+#   pip install -r requirements-ml.txt
+# Sau đó copy timesfm3/ từ Google upstream. Cho đến khi đó, các tool
+# timesfm_* sẽ trả error JSON hướng dẫn thay vì crash server.
 
 # --- Dành cho main.py (bot Telegram cảnh báo giá) ---
 # pyTelegramBotAPI>=4.14

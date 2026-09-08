@@ -1,0 +1,20 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+.claude
+.vscode
+.idea
+market_reports
+tests
+docs
+.env
+.env.local
+
+# Exclude mọi markdown mặc định, RỒI re-include các markdown mà MCP server cần serve
+*.md
+!README.md
+!0*.md                            # 6 file knowledge bài học ở repo root (01-basics.md ... 06-risks.md)
+!strategies/*.md                  # 10 file chiến lược Pine Script
+!.claude/skills/*/SKILL.md        # 2 skill file (danh-gia-co-phieu, chien-luoc-giao-dich)

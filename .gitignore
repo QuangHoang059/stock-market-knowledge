@@ -23,3 +23,12 @@ rad.json
 TestResults.xml
 
 __pycache__
+
+# MCP server secrets
+mcp_server/.env
+.env
+.env.local
+
+# Python venv (nếu có)
+.venv/
+venv/

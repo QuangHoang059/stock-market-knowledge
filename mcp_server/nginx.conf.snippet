@@ -1,0 +1,69 @@
+# Snippets cần paste vào nginx server block.
+# Giả định bạn dùng subdomain riêng `mcp.your-domain.com` cho MCP server.
+# FastMCP streamable-http serve ở root path "/" → không cần rewrite.
+#
+# === Setup một lần ===
+# 1. DNS: trỏ A record `mcp.your-domain.com` → VPS IP.
+# 2. Tạo cert: `sudo certbot --nginx -d mcp.your-domain.com`
+#    (certbot sẽ tự sửa nginx.conf, bạn chỉ cần paste location / bên dưới
+#     vào trong server { } block mà certbot tạo.)
+# 3. Reload: `sudo nginx -t && sudo systemctl reload nginx`
+# 4. Từ máy client, test:
+#      curl -i -H "Authorization: Bearer <token>" \
+#        https://mcp.your-domain.com/mcp
+
+server {
+    listen 443 ssl http2;
+    server_name mcp.your-domain.com;   # ← đổi thành subdomain của bạn
+
+    ssl_certificate     /etc/letsencrypt/live/mcp.your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mcp.your-domain.com/privkey.pem;
+
+    # === Forward tất cả request đến MCP server nội bộ ===
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+
+        # Chuẩn proxy headers
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Streamable-HTTP cần support chunked transfer + không buffer.
+        proxy_buffering        off;
+        proxy_request_buffering off;
+        proxy_read_timeout     300s;
+        proxy_send_timeout     300s;
+
+        # Không cache response (MCP dynamic).
+        add_header Cache-Control "no-store" always;
+    }
+
+    # === Tùy chọn: giấu port MCP khỏi internet ===
+    # Nếu muốn chỉ cho IP cá nhân truy cập, thêm allow/deny:
+    #   allow 203.0.113.10/32;   # IP nhà
+    #   allow 198.51.100.0/24;  # dải IP VPN công ty
+    #   deny  all;
+    # rồi bỏ phần location / ở trên vào trong block allow/deny.
+}
+
+# === Nếu muốn dùng path-prefix thay vì subdomain ===
+# (vd https://your-domain.com/mcp/), thêm location này vào server block
+# hiện tại của domain chính (KHÔNG cần server block riêng):
+#
+#   location /mcp/ {
+#       # FastMCP streamable-http mount ở "/" — strip prefix /mcp/.
+#       rewrite ^/mcp/(.*)$ /$1 break;
+#       proxy_pass http://127.0.0.1:8001;
+#       proxy_http_version 1.1;
+#       proxy_set_header Host              $host;
+#       proxy_set_header X-Real-IP         $remote_addr;
+#       proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+#       proxy_set_header X-Forwarded-Proto $scheme;
+#       proxy_buffering        off;
+#       proxy_request_buffering off;
+#       proxy_read_timeout     300s;
+#       proxy_send_timeout     300s;
+#       add_header Cache-Control "no-store" always;
+#   }

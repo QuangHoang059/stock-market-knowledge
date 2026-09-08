@@ -63,6 +63,25 @@ Project đi kèm skill `.claude/skills/danh-gia-co-phieu/` để Claude chạy c
 
 ---
 
+## 🤖 MCP Server (`mcp_server/`)
+
+Repo này đi kèm một **MCP server độc lập** để expose cả knowledge base + tools cho Claude Code / Claude Desktop từ bất kỳ máy nào — không cần `git clone`.
+
+**Cung cấp:**
+- 8 knowledge resources (`kb://01-basics` ... `kb://06-risk`, `kb://skill`, `kb://index`)
+- 12 tools: `evaluate_stock`, `get_history`, `get_fundamentals`, `get_index_trend`, `analyze_technical`, `score_value`, `score_canslim`, `position_size`, `suggest_stop`, `suggest_target`, `list_market_reports`, `get_market_report`
+
+**Dùng local** (stdio, không cần auth):
+```bash
+pip install -r requirements.txt
+python -m mcp_server
+```
+
+**Deploy lên VPS riêng** (HTTP transport + bearer token + Docker + nginx):
+→ Xem chi tiết tại [`mcp_server/README.md`](mcp_server/README.md).
+
+---
+
 ## ⚖️ Miễn trừ trách nhiệm
 
 Mọi phân tích là công cụ **hỗ trợ ra quyết định**, không thay thế nhận định của bạn. Đầu tư chứng khoán có rủi ro mất vốn. **Quyết định và trách nhiệm cuối cùng thuộc về bạn.**
