@@ -32,3 +32,8 @@ mcp_server/.env
 # Python venv (nếu có)
 .venv/
 venv/
+
+# agent_adk — provider secrets & cached data & history snapshots
+agent_adk/providers.env
+agent_adk/core/data/*.csv
+agent_adk/reports/history/

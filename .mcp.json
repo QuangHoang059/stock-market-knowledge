@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "stock-knowledge": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "."
+    },
+    "tradingview": {
+      "command": "node",
+      "args": ["D:/AllDemo_dev/finance/tradingview-mcp/src/server.js"]
+    }
+  }
+}
