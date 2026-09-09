@@ -10,6 +10,8 @@ Cấu hình qua env:
 - MCP_HOST         = hostname để bind (mặc định '127.0.0.1' cho dev)
 - MCP_PORT         = port (mặc định 8001)
 - MCP_AUTH_TOKEN   = bearer token bắt buộc khi MCP_TRANSPORT=http
+- MCP_RESOURCE_URL = public URL của server (dùng cho AuthSettings.resource_server_url,
+                     mặc định http://{host}:{port})
 """
 
 from __future__ import annotations
@@ -19,19 +21,20 @@ import sys
 # Force UTF-8 cho stdout/stderr khi chạy trên Windows console (cp1252) để in
 # được emoji và tiếng Việt. Trên POSIX (VPS Linux) đã là UTF-8 mặc định.
 if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-define]
 if hasattr(sys.stderr, "reconfigure"):
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-define]
 
 import argparse
 import logging
 import os
 import sys
 
+from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
 
 # Pyright không tự resolve package local — suppress cho 3 import này.
-from mcp_server.auth import BearerAuthMiddleware, get_expected_token  # pyright: ignore[reportMissingImports]
+from mcp_server.auth import StaticBearerTokenVerifier, get_expected_token  # pyright: ignore[reportMissingImports]
 from mcp_server.resources import register_resources  # pyright: ignore[reportMissingImports]
 from mcp_server.tools import register_tools  # pyright: ignore[reportMissingImports]
 
@@ -39,77 +42,74 @@ logger = logging.getLogger(__name__)
 
 
 def build_mcp(host: str = "127.0.0.1", port: int = 8001) -> FastMCP:
-    """Tạo FastMCP instance + đăng ký resources + tools."""
+    """Tạo FastMCP instance + đăng ký resources + tools + health route.
+
+    Khi HTTP mode được dùng, attach `AuthSettings` + `StaticBearerTokenVerifier`
+    để FastMCP tự enforce bearer token (wrap bằng BearerAuthBackend nội bộ,
+    dùng đúng lifecycle → fix được lỗi "Task group is not initialized" khi
+    wrap Starlette middleware thủ công).
+    """
+    expected_token = get_expected_token()
+    resource_url = os.environ.get(
+        "MCP_RESOURCE_URL", f"http://{host}:{port}"
+    )
+
+    auth_kwargs: dict = {}
+    if expected_token:
+        # AuthSettings bắt buộc issuer_url + resource_server_url.
+        # Vì ta dùng static bearer (không OAuth) nên issuer_url trỏ về
+        # chính server — chỉ là metadata, không ảnh hưởng verify.
+        auth_kwargs = {
+            "auth": AuthSettings(
+                issuer_url=resource_url,
+                resource_server_url=resource_url,
+            ),
+            "token_verifier": StaticBearerTokenVerifier(),
+        }
+
     mcp = FastMCP(
         name="stock-market-knowledge",
         instructions=(
             "Knowledge base + tools cho đánh giá cổ phiếu Việt Nam. "
-            "Đọc `kb://skill` trước để hiểu format trả lời 6-section. "
-            "Liệt kê resource qua `kb://index`."
+            "Đọc `kb://index` để liệt kê resource, sau đó đọc `kb://01-basics` "
+            "và `kb://06-risk` làm nền tảng."
         ),
         host=host,
         port=port,
-        # streamable_http_path='/mcp' là default — khớp với nginx snippet
-        # (proxy_pass http://127.0.0.1:8001/mcp/ nếu dùng path prefix).
+        **auth_kwargs,
     )
+
     register_resources(mcp)
     register_tools(mcp)
-    return mcp
 
+    # Custom route `/health` — FastMCP đảm bảo custom_route bypass auth
+    # (xem `custom_route` docstring: "will not require authorization").
+    # Dùng cho Docker healthcheck + uptime monitor.
+    @mcp.custom_route("/health", methods=["GET"])
+    async def _health_handler(_request) -> object:  # pyright: ignore[reportUnusedFunction, reportMissingTypeStubs]
+        from starlette.responses import JSONResponse
 
-async def _health_handler(request):  # pyright: ignore[reportUnusedParameter, reportMissingTypeStubs]
-    """Handler cho GET /health — trả JSON status, bypass auth."""
-    # `request` chỉ dùng để Starlette route matching — không cần đọc body.
-    _ = request
-    from starlette.responses import JSONResponse
-
-    return JSONResponse(
-        {
-            "status": "ok",
-            "service": "stock-market-knowledge-mcp",
-            "version": "0.1.0",
-        },
-        headers={"Cache-Control": "no-store"},
-    )
-
-
-def build_http_app(mcp: FastMCP):
-    """Build Starlette app cho HTTP mode: MCP endpoints + /health + auth.
-
-    Luồng:
-      request → BearerAuthMiddleware → (health? skip) → FastMCP streamable-http app
-    """
-    from starlette.applications import Starlette
-    from starlette.routing import Mount, Route
-
-    mcp_app = mcp.streamable_http_app()
-
-    app = Starlette(
-        routes=[
-            Route("/health", _health_handler, methods=["GET"]),
-            Route("/healthz", _health_handler, methods=["GET"]),
-            Mount("/", app=mcp_app),
-        ],
-    )
-
-    # Auth middleware wrap ngoài cùng. `/health` & `/healthz` được bypass
-    # bên trong BearerAuthMiddleware.
-    expected = get_expected_token()
-    if not expected:
-        logger.warning(
-            "MCP_AUTH_TOKEN chưa set — server sẽ từ chối mọi request "
-            "MCP (chỉ /health hoạt động). Set token trong .env hoặc "
-            "env var trước khi deploy."
+        return JSONResponse(
+            {
+                "status": "ok",
+                "service": "stock-market-knowledge-mcp",
+                "version": "0.1.0",
+            },
+            headers={"Cache-Control": "no-store"},
         )
-    app.add_middleware(BearerAuthMiddleware, expected_token=expected)
 
-    return app
+    # Alias /healthz cho tương thích Kubernetes-style probe.
+    @mcp.custom_route("/healthz", methods=["GET"])
+    async def _healthz_handler(_request) -> object:  # pyright: ignore[reportUnusedFunction, reportMissingTypeStubs]
+        from starlette.responses import JSONResponse
+
+        return JSONResponse({"status": "ok"})
+
+    return mcp
 
 
 def run_http(host: str, port: int) -> None:
     """Khởi động server ở HTTP mode (streamable-http transport)."""
-    import uvicorn
-
     expected = get_expected_token()
     if not expected:
         # Refuse to start — better fail loud than expose knowledge unauthenticated.
@@ -123,25 +123,19 @@ def run_http(host: str, port: int) -> None:
         sys.exit(1)
 
     mcp = build_mcp(host=host, port=port)
-    app = build_http_app(mcp)
 
     print(
         f"🚀 MCP server (streamable-http) trên http://{host}:{port}\n"
-        f"   Health: http://{host}:{port}/health\n"
-        f"   MCP endpoint: http://{host}:{port}/mcp\n"
-        f"   Auth: Bearer token (đã cấu hình)",
+        f"   Health: http://{host}:{port}/health (không cần auth)\n"
+        f"   MCP endpoint: http://{host}:{port}/mcp (cần Bearer token)\n"
+        f"   Auth: bearer token (đã cấu hình)",
         flush=True,
     )
 
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level=os.environ.get("MCP_LOG_LEVEL", "info"),
-        # Streamable-HTTP cần HTTP/1.1 với keep-alive
-        http="h11",
-        access_log=True,
-    )
+    # `mcp.run(transport="streamable-http")` tự quản uvicorn + task group
+    # lifecycle → tránh được lỗi "Task group is not initialized" khi wrap
+    # Starlette middleware thủ công như trước.
+    mcp.run(transport="streamable-http")
 
 
 def run_stdio() -> None:

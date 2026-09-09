@@ -7,7 +7,7 @@
     },
     "tradingview": {
       "command": "node",
-      "args": ["D:/AllDemo_dev/finance/tradingview-mcp/src/server.js"]
+      "args": ["../tradingview-mcp/src/server.js"]
     }
   }
 }

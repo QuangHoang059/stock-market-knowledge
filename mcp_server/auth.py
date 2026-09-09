@@ -1,8 +1,13 @@
 """Bearer token authentication cho HTTP transport.
 
 Khi chạy HTTP, server bắt buộc phải có `MCP_AUTH_TOKEN` (không cho phép
-chạy unauthenticated trên internet). Middleware này check token trên mọi
-request trừ `/health` và `/healthz` (cho Docker healthcheck / uptime monitor).
+chạy unauthenticated trên internet).
+
+Triển khai `TokenVerifier` protocol của FastMCP 1.x → FastMCP tự wrap
+`BearerAuthBackend` ASGI middleware nội bộ (với task group được init qua
+`mcp.run()`). Trước đây code wrap `BearerAuthMiddleware` thủ công quanh
+Starlette app riêng — wrap như vậy vô hiệu hoá lifecycle của FastMCP và
+gây `RuntimeError: Task group is not initialized` khi request đến.
 
 Token comparison dùng `hmac.compare_digest` để chống timing attack.
 """
@@ -10,15 +15,12 @@ Token comparison dùng `hmac.compare_digest` để chống timing attack.
 from __future__ import annotations
 
 import hmac
-import json
 import logging
 import os
-from typing import Any
+
+from mcp.server.auth.provider import AccessToken, TokenVerifier
 
 logger = logging.getLogger(__name__)
-
-# Path bypass auth — health checks chỉ cần TCP probe là đủ.
-HEALTH_PATHS: frozenset[str] = frozenset({"/health", "/healthz"})
 
 
 def get_expected_token() -> str | None:
@@ -47,82 +49,29 @@ def extract_bearer(authorization_header: str | None) -> str | None:
     parts = authorization_header.strip().split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "bearer":
         return None
-    token = parts[1].strip()
-    return token or None
+    return parts[1].strip() or None
 
 
-class BearerAuthMiddleware:
-    """ASGI middleware: chặn mọi request không có bearer token hợp lệ.
+class StaticBearerTokenVerifier(TokenVerifier):
+    """TokenVerifier cho static bearer token (không OAuth).
 
-    Bypass cho HEALTH_PATHS (chỉ cần TCP probe cho Docker healthcheck).
-
-    Trả 401 JSON nếu thiếu / sai token. Đây là defense in depth — bên ngoài
-    còn có nginx reverse proxy với TLS, có thể thêm IP allowlist nếu cần.
+    So sánh token với MCP_AUTH_TOKEN qua `hmac.compare_digest`. Trả
+    `AccessToken` hợp lệ nếu khớp, `None` nếu không. FastMCP sẽ trả
+    401 cho client khi `verify_token` trả `None`.
     """
 
-    def __init__(self, app: Any, expected_token: str | None = None) -> None:
-        self.app = app
-        # Nếu không truyền explicit, đọc từ env mỗi request (cho phép reload
-        # token mà không restart server trong trường hợp dev).
-        self._expected_override = expected_token
-
-    def _expected(self) -> str | None:
-        return self._expected_override if self._expected_override is not None else get_expected_token()
-
-    async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
-        if scope["type"] != "http":
-            # WebSocket, lifespan, etc. → pass through
-            await self.app(scope, receive, send)
-            return
-
-        path = scope.get("path", "")
-        if path in HEALTH_PATHS:
-            await self.app(scope, receive, send)
-            return
-
-        expected = self._expected()
-        if not expected:
-            # Server được start mà thiếu token là lỗi cấu hình. Từ chối mọi
-            # request để tránh lộ knowledge base không auth.
-            logger.error("MCP_AUTH_TOKEN chưa set nhưng HTTP transport đang chạy. Từ chối request.")
-            await self._reject(send, status=503, error="server_misconfigured", message="MCP_AUTH_TOKEN chưa được cấu hình")
-            return
-
-        # Đọc Authorization header (case-insensitive theo HTTP spec)
-        headers = dict(scope.get("headers") or [])
-        auth_value = None
-        for k, v in headers.items():
-            if k.lower() == b"authorization":
-                auth_value = v.decode("latin-1", errors="replace")
-                break
-
-        token = extract_bearer(auth_value)
-        if not token or not verify_bearer_token(token):
-            await self._reject(send, status=401, error="unauthorized", message="Bearer token không hợp lệ hoặc thiếu")
-            return
-
-        await self.app(scope, receive, send)
-
-    @staticmethod
-    async def _reject(send: Any, *, status: int, error: str, message: str) -> None:
-        body = json.dumps({"error": error, "message": message}, ensure_ascii=False).encode("utf-8")
-        await send(
-            {
-                "type": "http.response.start",
-                "status": status,
-                "headers": [
-                    (b"content-type", b"application/json; charset=utf-8"),
-                    (b"content-length", str(len(body)).encode("ascii")),
-                    (b"www-authenticate", b'Bearer realm="mcp-server"'),
-                ],
-            }
+    async def verify_token(self, token: str) -> AccessToken | None:
+        if not verify_bearer_token(token):
+            return None
+        return AccessToken(
+            token=token,
+            client_id="bearer-token-client",
+            scopes=["read", "write"],
         )
-        await send({"type": "http.response.body", "body": body, "more_body": False})
 
 
 __all__ = [
-    "BearerAuthMiddleware",
-    "HEALTH_PATHS",
+    "StaticBearerTokenVerifier",
     "extract_bearer",
     "get_expected_token",
     "verify_bearer_token",

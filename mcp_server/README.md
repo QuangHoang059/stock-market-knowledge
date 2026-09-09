@@ -20,9 +20,10 @@ nginx (reverse proxy có sẵn trên VPS)
         │
         ▼  HTTP localhost:8001
 mcp_server (Docker container)
-   ├─ BearerAuthMiddleware  ← kiểm tra token, bypass /health
-   ├─ /health               ← Docker healthcheck
-   └─ /mcp                  ← streamable-http MCP transport
+   ├─ FastMCP 1.x BearerAuthBackend (built-in, lifecycle-safe)
+   │     └─ token_verifier=StaticBearerTokenVerifier() so sánh với MCP_AUTH_TOKEN
+   ├─ /health    ← custom route, bypass auth (Docker healthcheck)
+   └─ /mcp       ← streamable-http MCP transport (enforce Bearer token)
         │
         ▼
 tools/ (evaluate, data, value_score, canslim_score, technical, risk)
@@ -192,6 +193,7 @@ git pull && docker compose build stock-mcp && docker compose up -d
 | `evaluate_stock` trả `error: vnstock...` | VPS ở xa VN, network vnstock timeout | Tăng timeout hoặc dùng VPS gần VN (Singapore/Hong Kong) |
 | Knowledge file không đọc được | File `.md` chưa có trong image | Rebuild: `docker compose build && up -d` |
 | Container restart liên tục | HEALTHCHECK fail → kiểm tra log | `docker logs stock-mcp` |
+| `RuntimeError: Task group is not initialized` khi gọi `/mcp` | Wrap ASGI middleware custom quanh `FastMCP.streamable_http_app()` vô hiệu hoá task group lifecycle | Dùng `token_verifier=` built-in của FastMCP (xem `mcp_server/auth.py` — `StaticBearerTokenVerifier`); KHÔNG wrap middleware thủ công |
 
 Xem thêm log:
 
