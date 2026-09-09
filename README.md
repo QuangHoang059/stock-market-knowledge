@@ -10,12 +10,12 @@ Bộ tài liệu kiến thức + công cụ Python đánh giá cổ phiếu, t�
 
 | # | Bài | Trường phái / Chủ đề |
 |---|-----|----------------------|
-| 01 | [Nhận thức & Khái niệm Cơ bản](01_Nhan_Thuc_&_Khai_Niem_Co_Ban.md) | Khái niệm, chỉ báo kỹ thuật (MA/RSI/MACD/BB), nến Nhật, xu hướng, lệnh giao dịch. |
-| 02 | [Triết lý Đầu tư Giá trị (Buffett)](02_Triet_Ly_Dau_Tu_Gia_Tri_Buffett.md) | Moat, ROE, nợ, biên an toàn, định giá. |
-| 03 | [Hệ thống Tăng trưởng (CANSLIM)](03_He_Thong_Tang_Truong_CANSLIM.md) | 7 tiêu chí O'Neil, cúp tay cầm, FTD. |
-| 04 | [Wyckoff & VSA](04_Ly_Thuyet_Wyckoff_&_VSA.md) | Dấu chân dòng tiền, tích lũy/phân phối, Spring/UTAD. |
-| 05 | [Sóng Elliott & Fibonacci](05_Nguyen_Ly_Song_Elliott.md) | Cấu trúc 5-3, 3 quy tắc, mục tiêu Fib. |
-| 06 | [Quản trị Rủi ro & Kỷ luật](06_Quan_Tri_Rui_Ro_&_Ky_Luat.md) | R:R, position sizing, cắt lỗ 7–8%, chốt lời 20–25%. |
+| 01 | [Nhận thức & Khái niệm Cơ bản](lessons/01_Nhan_Thuc_&_Khai_Niem_Co_Ban.md) | Khái niệm, chỉ báo kỹ thuật (MA/RSI/MACD/BB), nến Nhật, xu hướng, lệnh giao dịch. |
+| 02 | [Triết lý Đầu tư Giá trị (Buffett)](lessons/02_Triet_Ly_Dau_Tu_Gia_Tri_Buffett.md) | Moat, ROE, nợ, biên an toàn, định giá. |
+| 03 | [Hệ thống Tăng trưởng (CANSLIM)](lessons/03_He_Thong_Tang_Truong_CANSLIM.md) | 7 tiêu chí O'Neil, cúp tay cầm, FTD. |
+| 04 | [Wyckoff & VSA](lessons/04_Ly_Thuyet_Wyckoff_&_VSA.md) | Dấu chân dòng tiền, tích lũy/phân phối, Spring/UTAD. |
+| 05 | [Sóng Elliott & Fibonacci](lessons/05_Nguyen_Ly_Song_Elliott.md) | Cấu trúc 5-3, 3 quy tắc, mục tiêu Fib. |
+| 06 | [Quản trị Rủi ro & Kỷ luật](lessons/06_Quan_Tri_Rui_Ro_&_Ky_Luat.md) | R:R, position sizing, cắt lỗ 7–8%, chốt lời 20–25%. |
 
 ### Lộ trình học gợi ý
 

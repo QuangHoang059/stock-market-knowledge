@@ -1,6 +1,6 @@
 """Knowledge base resources cho MCP server.
 
-Mỗi file markdown kiến thức (bài 01–06) + file strategy (01–10) + skill file
+Mỗi file markdown kiến thức (bài 01–06 trong `lessons/`) + file strategy (01–10) + skill file
 (2 skills) được expose dưới dạng MCP resource với URI scheme `kb://`. Thêm
 `kb://index` để liệt kê tất cả resource, và resource template
 `kb://reports/{filename}` để đọc report đã sinh trong `market_reports/`.
@@ -24,27 +24,27 @@ logger = logging.getLogger(__name__)
 # Thứ tự slug (01-basics → 06-risk) khớp với thứ tự học trong README.
 KNOWLEDGE_FILES: dict[str, tuple[str, str]] = {
     "01-basics": (
-        "01_Nhan_Thuc_&_Khai_Niem_Co_Ban.md",
+        "lessons/01_Nhan_Thuc_&_Khai_Niem_Co_Ban.md",
         "Nhận thức & khái niệm cơ bản — chỉ báo kỹ thuật, nến Nhật, xu hướng, lệnh giao dịch.",
     ),
     "02-buffett": (
-        "02_Triet_Ly_Dau_Tu_Gia_Tri_Buffett.md",
+        "lessons/02_Triet_Ly_Dau_Tu_Gia_Tri_Buffett.md",
         "Triết lý đầu tư giá trị (Buffett) — moat, ROE, nợ, biên an toàn, định giá.",
     ),
     "03-canslim": (
-        "03_He_Thong_Tang_Truong_CANSLIM.md",
+        "lessons/03_He_Thong_Tang_Truong_CANSLIM.md",
         "Hệ thống tăng trưởng CANSLIM (O'Neil) — 7 tiêu chí C/A/N/S/L/I/M, cúp tay cầm, FTD.",
     ),
     "04-wyckoff": (
-        "04_Ly_Thuyet_Wyckoff_&_VSA.md",
+        "lessons/04_Ly_Thuyet_Wyckoff_&_VSA.md",
         "Wyckoff & VSA — dấu chân dòng tiền, tích lũy/phân phối, Spring/UTAD.",
     ),
     "05-elliott": (
-        "05_Nguyen_Ly_Song_Elliott.md",
+        "lessons/05_Nguyen_Ly_Song_Elliott.md",
         "Sóng Elliott & Fibonacci — cấu trúc 5-3, 3 quy tắc, mục tiêu Fib.",
     ),
     "06-risk": (
-        "06_Quan_Tri_Rui_Ro_&_Ky_Luat.md",
+        "lessons/06_Quan_Tri_Rui_Ro_&_Ky_Luat.md",
         "Quản trị rủi ro & kỷ luật — R:R, position sizing, cắt lỗ 7–8%, chốt lời 20–25%.",
     ),
 }

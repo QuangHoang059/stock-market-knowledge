@@ -7,7 +7,7 @@ description: Đánh giá / phân tích một mã cổ phiếu Việt Nam hoặc 
 
 Skill này điều phối bộ công cụ `tools/` trong thư mục `stock-market-knowledge/` để
 đánh giá một mã cổ phiếu, rồi **diễn giải kết quả theo đúng kiến thức** trong các file
-markdown bài 01–06 (cùng thư mục).
+markdown bài 01–06 (nằm trong thư mục `lessons/`).
 
 ## Khi nào dùng
 

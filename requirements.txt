@@ -7,7 +7,7 @@ yfinance>=0.2.40           # cần cho tools/timesfm (download OHLCV)
 
 # MCP server (mcp_server/) — expose knowledge base + tools qua MCP protocol.
 # Cần thiết khi chạy `python -m mcp_server` hoặc build Docker image.
-mcp>=1.0
+mcp<2.0
 
 # ML deps cho TimesFM 3.0 forecast — tách riêng ở `requirements-ml.txt`
 # để Docker image gọn hơn. Cài riêng:
