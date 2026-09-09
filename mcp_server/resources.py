@@ -49,51 +49,6 @@ KNOWLEDGE_FILES: dict[str, tuple[str, str]] = {
     ),
 }
 
-# 10 chiến lược Pine Script v6 — merge từ repo cũ `strategy-trade/`.
-# Slug đánh số `strategy-NN-...` để agent nhận biết thứ tự.
-STRATEGY_FILES: dict[str, tuple[str, str]] = {
-    "strategy-01-ema-crossover": (
-        "strategies/01-ema-20-50-crossover.md",
-        "EMA 20/50 Crossover — trend following cổ điển. TF: 1H/4H. Entry khi EMA cross, SL swing, TP 2R.",
-    ),
-    "strategy-02-breakout-volume": (
-        "strategies/02-breakout-plus-volume.md",
-        "Breakout + Volume — phá level với volume xác nhận >1.5× trung bình 20. TF: 15m/1H. TP 2R.",
-    ),
-    "strategy-03-breakout-retest": (
-        "strategies/03-breakout-retest.md",
-        "Breakout + Retest — vào lệnh khi giá retest thành công vùng phá. TF: 15m/1H. TP 2R.",
-    ),
-    "strategy-04-ema-pullback": (
-        "strategies/04-ema20-pullback.md",
-        "EMA20 Pullback — pullback về EMA20 theo trend + đóng nến xác nhận. TF: 15m/1H. TP 2R.",
-    ),
-    "strategy-05-rsi-bollinger-mr": (
-        "strategies/05-rsi-bollinger-mean-reversion.md",
-        "RSI + Bollinger Mean Reversion — giá chạm band ngoài + RSI quá bán/quá mua. TF: 15m/1H. TP 1.5R.",
-    ),
-    "strategy-06-bb-squeeze": (
-        "strategies/06-bollinger-squeeze-breakout.md",
-        "Bollinger Squeeze Breakout — bắt biến động bùng nổ sau nén band. TF: 15m/1H. TP 2R.",
-    ),
-    "strategy-07-vwap-pullback": (
-        "strategies/07-vwap-pullback.md",
-        "VWAP Pullback — intraday pullback về VWAP + volume xác nhận. TF: 5m/15m. TP 1.5R.",
-    ),
-    "strategy-08-macd-ema200": (
-        "strategies/08-macd-ema200-trend-filter.md",
-        "MACD + EMA200 — momentum cross theo trend filter EMA200. TF: 1H/4H. TP 2R.",
-    ),
-    "strategy-09-orb": (
-        "strategies/09-opening-range-breakout.md",
-        "Opening Range Breakout — phá opening range 5/15/30 phút đầu phiên. TF: 5m/15m. TP 2R.",
-    ),
-    "strategy-10-donchian-bo": (
-        "strategies/10-donchian-channel-breakout.md",
-        "Donchian Channel Breakout — 20-bar breakout, SL 2×ATR(14), TP 3×ATR(14). TF: 1H/4H/D.",
-    ),
-}
-
 # Skill files cho agent Claude.
 SKILL_FILES: dict[str, tuple[str, str]] = {
     "skill-danh-gia-co-phieu": (
@@ -139,10 +94,6 @@ def register_resources(mcp) -> None:
         for slug, (filename, desc) in KNOWLEDGE_FILES.items():
             lines.append(f"- **`kb://{slug}`** → `{filename}` — {desc}")
         lines.append("")
-        lines.append("## 10 Chiến lược Pine Script (Pine v6)\n")
-        for slug, (filename, desc) in STRATEGY_FILES.items():
-            lines.append(f"- **`kb://{slug}`** → `{filename}` — {desc}")
-        lines.append("")
         lines.append("## Skill Claude (hướng dẫn cho agent)\n")
         for slug, (filename, desc) in SKILL_FILES.items():
             lines.append(f"- **`kb://{slug}`** → `{filename}` — {desc}")
@@ -181,15 +132,6 @@ def register_resources(mcp) -> None:
             )
         _register_static_kb(mcp, slug=slug, path=path, desc=desc)
 
-    # 10 file strategy — same pattern.
-    for slug, (filename, desc) in STRATEGY_FILES.items():
-        path = REPO_ROOT / filename
-        if not path.exists():
-            logger.warning(
-                "Strategy file không tồn tại: %s — resource kb://%s sẽ fail khi đọc",
-                path,
-                slug,
-            )
         _register_static_kb(mcp, slug=slug, path=path, desc=desc)
 
     # Skill files (loop thay vì hard-code).
